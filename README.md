@@ -4,7 +4,9 @@ Tampermonkey userscript that exports your whole JanitorAI account as one JSON fi
 
 Install from Greasy Fork: https://greasyfork.org/en/scripts/593605-janitorai-full-export
 
-Everything runs in your own browser. Nothing is sent to anyone.
+Everything runs in your own browser and stays on your device. The script only talks to janitorai.com, the file lands on your disk, and the Uno Chat import writes into a local database inside your browser. Nothing is uploaded to unorouter or anyone else.
+
+Full guide with desktop and Android steps: https://unorouter.com/en/docs/chat/janitorai-import
 
 ## How to use
 
@@ -15,7 +17,7 @@ Everything runs in your own browser. Nothing is sent to anyone.
 4. A pink "Export all" button appears in the bottom right corner. Click it and wait. The button shows progress.
 5. When it finishes, a file named `janitorai-full-YYYY-MM-DD.json` is downloaded.
 
-On Android only Firefox works, because Chrome for Android has no extensions. Keep the screen on and stay in Firefox until the export finishes.
+On Android only Firefox works, because Chrome for Android has no extensions. In Firefox open the three dots menu, then Add-ons, add Tampermonkey, then follow the same steps. Keep the screen on and stay in Firefox until the export finishes.
 
 ## Import into Uno Chat
 
