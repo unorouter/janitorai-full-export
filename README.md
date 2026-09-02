@@ -42,7 +42,7 @@ A character whose creator hid the definition AND turned proxy access off. Both f
       "name": "...",
       "description": "...",
       "lorebooks": [],
-      "chats": [{ "chat_id": "...", "persona": {}, "messages": [] }]
+      "chats": [{ "id": "...", "persona": {}, "messages": [] }]
     }
   },
   "skipped": [{ "character": "...", "what": "definition", "why": "..." }]
