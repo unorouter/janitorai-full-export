@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JanitorAI Full Export
 // @namespace    https://unorouter.com/
-// @version      1.2.0
+// @version      1.2.1
 // @description  Export your whole JanitorAI account: every chat, the character cards, and every lorebook that is reachable, as one JSON file.
 // @author       unorouter
 // @match        https://janitorai.com/*
@@ -56,13 +56,9 @@
     } catch {
       token = null;
     }
-    if (!token) {
-      console.error(
-        "%cNot logged in to janitorai.com.",
-        "color:#f66;font-weight:bold",
-      );
-      return;
-    }
+    // Thrown, not logged and returned: a silent return leaves the button
+    // saying "Done" with no file, which reads as a broken export.
+    if (!token) throw new Error("Not logged in to janitorai.com");
 
     const H = {
       accept: "application/json",
@@ -82,9 +78,8 @@
       characters.push(...batch);
       if (!j?.hasMore || batch.length === 0) break;
     }
-    log(
-      `${characters.length} characters, ${characters[0] ? "" : "nothing to do"}`,
-    );
+    if (characters.length === 0) throw new Error("No chats on this account");
+    log(`${characters.length} characters`);
 
     // ---- the assembled prompt, which is where hidden definitions live -------
     // open_ai_mode "proxy" makes JanitorAI build the prompt and hand it back to
@@ -389,11 +384,21 @@
     const blob = new Blob([JSON.stringify(payload, null, 2)], {
       type: "application/json",
     });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
+    a.href = url;
     a.download = `janitorai-full-${new Date().toISOString().slice(0, 10)}.json`;
+    // In the DOM and revoked LATE: Firefox ignores a click on a detached
+    // anchor, and revoking in the same tick cancels a download it has not
+    // started yet. Both end as "Done" with nothing saved.
+    a.style.display = "none";
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(a.href);
+    setTimeout(() => {
+      a.remove();
+      URL.revokeObjectURL(url);
+    }, 60000);
+    log(`If no file was saved, open this link within a minute: ${url}`);
 
     const books = Object.values(out).reduce((n, c) => n + c.lorebooks.length, 0);
     log(
@@ -438,7 +443,7 @@
         btn.textContent = "Done";
       } catch (e) {
         console.error(e);
-        btn.textContent = "Failed, see console";
+        btn.textContent = String(e?.message ?? e).slice(0, 28);
       }
       setTimeout(() => {
         btn.textContent = label;
