@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JanitorAI Full Export
 // @namespace    https://unorouter.com/
-// @version      1.2.1
+// @version      1.2.2
 // @description  Export your whole JanitorAI account: every chat, the character cards, and every lorebook that is reachable, as one JSON file.
 // @author       unorouter
 // @match        https://janitorai.com/*
@@ -46,12 +46,19 @@
       return m ? decodeURIComponent(m[1]) : "";
     };
 
-    // The session is a SPLIT supabase cookie; localStorage holds no token here.
+    // The session is a supabase cookie, split into as many .N chunks as it needs
+    // (or none when it is small), holding base64url without padding: reading
+    // only .0 and .1 through plain atob failed for some accounts.
     let token;
     try {
-      const raw = (
-        cookie("sb-auth-auth-token.0") + cookie("sb-auth-auth-token.1")
-      ).replace("base64-", "");
+      let raw = cookie("sb-auth-auth-token");
+      if (!raw) {
+        for (let i = 0, part; (part = cookie(`sb-auth-auth-token.${i}`)); i++) {
+          raw += part;
+        }
+      }
+      raw = raw.replace(/^base64-/, "").replace(/-/g, "+").replace(/_/g, "/");
+      raw += "=".repeat((4 - (raw.length % 4)) % 4);
       token = JSON.parse(atob(raw)).access_token;
     } catch {
       token = null;
