@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         JanitorAI Full Export
 // @namespace    https://unorouter.com/
-// @version      1.2.2
+// @version      1.2.3
 // @description  Export your whole JanitorAI account: every chat, the character cards, and every lorebook that is reachable, as one JSON file.
 // @author       unorouter
 // @match        https://janitorai.com/*
@@ -383,14 +383,17 @@
       };
     }
 
-    const payload = {
-      exported_at: new Date().toISOString(),
-      characters: out,
-      skipped,
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json",
+    // Written piece by piece: one JSON.stringify of a large account passes the
+    // browser's maximum string length, throws "Invalid string length" at the
+    // very end, and saves nothing.
+    const parts = [
+      `{"exported_at":${JSON.stringify(new Date().toISOString())},"characters":{`,
+    ];
+    Object.entries(out).forEach(([id, value], i) => {
+      parts.push(`${i ? "," : ""}${JSON.stringify(id)}:${JSON.stringify(value)}`);
     });
+    parts.push(`},"skipped":${JSON.stringify(skipped)}}`);
+    const blob = new Blob(parts, { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -441,7 +444,7 @@
     btn.addEventListener("click", async () => {
       if (btn.disabled) return;
       btn.disabled = true;
-      const label = btn.textContent;
+      const label = "Export all";
       btn.textContent = "Exporting...";
       try {
         await runExport((done, total, name) => {
@@ -450,7 +453,12 @@
         btn.textContent = "Done";
       } catch (e) {
         console.error(e);
-        btn.textContent = String(e?.message ?? e).slice(0, 28);
+        // Left on the button until clicked: reset after a few seconds, a
+        // failure at the end looked like the export simply stopping.
+        btn.textContent = `Failed: ${String(e?.message ?? e)}`.slice(0, 60);
+        btn.title = String(e?.stack ?? e);
+        btn.disabled = false;
+        return;
       }
       setTimeout(() => {
         btn.textContent = label;
